@@ -30,8 +30,8 @@ const Hero = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button size="lg" className="bg-gradient-primary hover:opacity-90 text-white shadow-medium px-8 py-6 text-lg">
-              Start Learning Now
+            <Button size="lg" className="bg-gradient-primary hover:opacity-90 text-white shadow-medium px-8 py-6 text-lg" asChild>
+              <a href="/app">Start Learning Now</a>
             </Button>
             <Button size="lg" variant="outline" className="border-primary/20 hover:bg-primary/5 px-8 py-6 text-lg">
               Watch Demo

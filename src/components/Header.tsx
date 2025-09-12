@@ -32,8 +32,8 @@ const Header = () => {
           <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
             Sign In
           </Button>
-          <Button className="bg-gradient-primary hover:opacity-90 text-white shadow-soft">
-            Get Started
+          <Button className="bg-gradient-primary hover:opacity-90 text-white shadow-soft" asChild>
+            <a href="/app">Get Started</a>
           </Button>
         </div>
 
@@ -60,8 +60,8 @@ const Header = () => {
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border/50">
                 <Button variant="ghost">Sign In</Button>
-                <Button className="bg-gradient-primary hover:opacity-90 text-white">
-                  Get Started
+                <Button className="bg-gradient-primary hover:opacity-90 text-white" asChild>
+                  <a href="/app">Get Started</a>
                 </Button>
               </div>
             </nav>
