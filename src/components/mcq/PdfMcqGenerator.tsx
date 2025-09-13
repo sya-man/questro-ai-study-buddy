@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { FileText, Upload, Download, Sparkles, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 interface MCQQuestion {
   question: string;
   options: string[];
-  correctAnswer: number;
+  correct_answer: number;
   explanation: string;
 }
 
@@ -44,62 +45,49 @@ const PdfMcqGenerator = () => {
     setProgress(0);
 
     try {
-      // Simulate processing with progress updates
-      const intervals = [20, 40, 60, 80, 100];
+      // Extract text from PDF
+      const pdfData = new Uint8Array(await file.arrayBuffer());
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
       
-      for (let i = 0; i < intervals.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setProgress(intervals[i]);
+      setProgress(20);
+      
+      const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+      let fullText = '';
+      
+      for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) { // Process first 5 pages
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        fullText += pageText + ' ';
+        setProgress(20 + (i / Math.min(pdf.numPages, 5)) * 40);
       }
 
-      // Mock generated questions
-      const mockQuestions: MCQQuestion[] = [
-        {
-          question: "What is the primary function of mitochondria in a cell?",
-          options: [
-            "Protein synthesis",
-            "Energy production (ATP synthesis)", 
-            "DNA replication",
-            "Waste removal"
-          ],
-          correctAnswer: 1,
-          explanation: "Mitochondria are known as the powerhouse of the cell because they produce ATP through cellular respiration."
-        },
-        {
-          question: "Which of the following best describes photosynthesis?",
-          options: [
-            "The process of breaking down glucose",
-            "The conversion of light energy into chemical energy",
-            "The transport of nutrients in plants",
-            "The reproduction process in plants"
-          ],
-          correctAnswer: 1,
-          explanation: "Photosynthesis converts light energy from the sun into chemical energy stored in glucose molecules."
-        },
-        {
-          question: "What is the basic unit of heredity?",
-          options: [
-            "Chromosome",
-            "DNA",
-            "Gene",
-            "Protein"
-          ],
-          correctAnswer: 2,
-          explanation: "A gene is the basic unit of heredity, containing instructions for specific traits."
-        }
-      ];
+      setProgress(70);
 
-      setQuestions(mockQuestions);
-      setSelectedAnswers(new Array(mockQuestions.length).fill(-1));
+      // Call Supabase Edge Function to generate MCQs
+      const response = await supabase.functions.invoke('generate-mcq', {
+        body: { 
+          pdfText: fullText,
+          sessionId: 'mcq-session'
+        }
+      });
+
+      if (response.error) throw response.error;
+
+      setProgress(100);
+      const generatedQuestions = response.data.questions || [];
+      setQuestions(generatedQuestions);
+      setSelectedAnswers(new Array(generatedQuestions.length).fill(-1));
       
       toast({
-        title: 'Success!',
-        description: `Generated ${mockQuestions.length} MCQ questions from your PDF.`,
+        title: 'MCQs Generated Successfully!',
+        description: `Generated ${generatedQuestions.length} questions from your PDF.`,
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to process PDF. Please make sure you have configured your Gemini API key.',
+        description: error.message || 'Failed to generate MCQs. Please check your API key in settings.',
         variant: 'destructive',
       });
     } finally {
@@ -120,7 +108,7 @@ const PdfMcqGenerator = () => {
       questions: questions.map((q, index) => ({
         ...q,
         userAnswer: selectedAnswers[index],
-        isCorrect: selectedAnswers[index] === q.correctAnswer
+        isCorrect: selectedAnswers[index] === q.correct_answer
       }))
     };
 
@@ -273,7 +261,7 @@ const PdfMcqGenerator = () => {
                           onClick={() => handleAnswerSelect(questionIndex, optionIndex)}
                           className={`w-full text-left p-3 rounded-lg border transition-colors ${
                             selectedAnswers[questionIndex] === optionIndex
-                              ? selectedAnswers[questionIndex] === question.correctAnswer
+                              ? selectedAnswers[questionIndex] === question.correct_answer
                                 ? 'bg-green-50 border-green-200 text-green-800'
                                 : 'bg-red-50 border-red-200 text-red-800'
                               : 'border-border hover:border-primary/50'
@@ -285,7 +273,7 @@ const PdfMcqGenerator = () => {
                             </span>
                             <span>{option}</span>
                             {selectedAnswers[questionIndex] === optionIndex && (
-                              selectedAnswers[questionIndex] === question.correctAnswer ? (
+                              selectedAnswers[questionIndex] === question.correct_answer ? (
                                 <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
                               ) : (
                                 <XCircle className="h-4 w-4 text-red-600 ml-auto" />

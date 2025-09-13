@@ -1,7 +1,7 @@
-// Supabase configuration
+// Supabase configuration - Using Lovable's native Supabase integration
 export const SUPABASE_CONFIG = {
-  url: import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co',
-  anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key',
+  url: process.env.SUPABASE_URL!,
+  anonKey: process.env.SUPABASE_ANON_KEY!,
 };
 
 // Database table names

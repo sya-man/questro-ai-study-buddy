@@ -51,22 +51,34 @@ const ChatInterface = () => {
     setIsLoading(true);
 
     try {
-      // Here you would integrate with Gemini AI using the user's API key
-      // For now, we'll simulate a response
-      setTimeout(() => {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'I received your message. To provide AI-powered responses, please make sure you have configured your Gemini API key in the API Keys section. Once set up, I can help you with detailed explanations, problem solving, and multilingual support!',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-        setIsLoading(false);
-      }, 1000);
+      // Get or create chat session
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      let sessionId = 'default-session';
+      
+      const response = await supabase.functions.invoke('chat-ai', {
+        body: { 
+          message: inputValue,
+          sessionId: sessionId
+        }
+      });
+
+      if (response.error) throw response.error;
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response.data.response,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      setIsLoading(false);
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to send message. Please try again.',
+        description: error.message || 'Failed to send message. Please check your API key in settings.',
         variant: 'destructive',
       });
       setIsLoading(false);

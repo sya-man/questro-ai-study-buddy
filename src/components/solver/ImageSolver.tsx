@@ -2,41 +2,35 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Image, Upload, Camera, Zap, Copy, Download } from 'lucide-react';
+import { Image, Upload, Camera, Copy, Sparkles } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 interface Solution {
   question: string;
   steps: string[];
-  answer: string;
+  final_answer: string;
   explanation: string;
 }
 
 const ImageSolver = () => {
   const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
-  const [language, setLanguage] = useState('en');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [solutions, setSolutions] = useState<Solution[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'ru', name: 'Russian' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'ko', name: 'Korean' },
-    { code: 'zh', name: 'Chinese' },
-    { code: 'hi', name: 'Hindi' },
-    { code: 'ar', name: 'Arabic' },
+    'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese',
+    'Russian', 'Chinese', 'Japanese', 'Korean', 'Arabic', 'Hindi',
+    'Bengali', 'Urdu', 'Turkish', 'Dutch', 'Swedish', 'Norwegian'
   ];
 
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    if (!file) return;
+
     if (file && file.type.startsWith('image/')) {
       setImage(file);
       
@@ -66,47 +60,43 @@ const ImageSolver = () => {
     setIsProcessing(true);
     
     try {
-      // Simulate AI processing
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Convert image to base64
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = document.createElement('img');
+      
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = imagePreview!;
+      });
 
-      // Mock solutions based on detected questions
-      const mockSolutions: Solution[] = [
-        {
-          question: "Solve: 2x + 5 = 13",
-          steps: [
-            "Start with the equation: 2x + 5 = 13",
-            "Subtract 5 from both sides: 2x + 5 - 5 = 13 - 5",
-            "Simplify: 2x = 8",
-            "Divide both sides by 2: x = 8 ÷ 2",
-            "Final answer: x = 4"
-          ],
-          answer: "x = 4",
-          explanation: "This is a linear equation. We isolate x by performing inverse operations on both sides of the equation."
-        },
-        {
-          question: "Find the derivative of f(x) = 3x² + 2x - 1",
-          steps: [
-            "Apply the power rule to each term",
-            "For 3x²: d/dx(3x²) = 3 × 2x = 6x",
-            "For 2x: d/dx(2x) = 2",
-            "For -1: d/dx(-1) = 0",
-            "Combine all terms: f'(x) = 6x + 2"
-          ],
-          answer: "f'(x) = 6x + 2",
-          explanation: "Using the power rule for differentiation: d/dx(xⁿ) = nxⁿ⁻¹"
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+      // Call Supabase Edge Function to solve questions
+      const response = await supabase.functions.invoke('solve-image', {
+        body: { 
+          imageData: imageData,
+          language: selectedLanguage
         }
-      ];
+      });
 
-      setSolutions(mockSolutions);
+      if (response.error) throw response.error;
+
+      setSolutions(response.data.solutions || []);
       
       toast({
-        title: 'Success!',
-        description: `Found and solved ${mockSolutions.length} questions in the image.`,
+        title: 'Questions Solved!',
+        description: `Found and solved ${response.data.solutions?.length || 0} questions in the image.`,
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to process image. Please make sure you have configured your Gemini API key.',
+        description: error.message || 'Failed to solve questions. Please check your API key in settings.',
         variant: 'destructive',
       });
     } finally {
@@ -122,39 +112,17 @@ const ImageSolver = () => {
     });
   };
 
-  const exportSolutions = () => {
-    const data = {
-      image_name: image?.name,
-      processed_at: new Date().toISOString(),
-      language: language,
-      solutions: solutions
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `solutions-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: 'Exported!',
-      description: 'Solutions exported successfully.',
-    });
-  };
-
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="border-b border-border/50 p-6 bg-card/50">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-            <Image className="h-5 w-5 text-white" />
+            <Camera className="h-5 w-5 text-white" />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-foreground">Image Question Solver</h1>
-            <p className="text-sm text-muted-foreground">Upload question papers and get detailed solutions in any language</p>
+            <p className="text-sm text-muted-foreground">Upload images of questions and get step-by-step solutions</p>
           </div>
         </div>
       </div>
@@ -165,104 +133,94 @@ const ImageSolver = () => {
           <Card className="shadow-soft border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Camera className="h-5 w-5 text-primary" />
-                <span>Upload Question Image</span>
+                <Upload className="h-5 w-5 text-primary" />
+                <span>Upload Image</span>
               </CardTitle>
               <CardDescription>
-                Take a photo or upload an image of questions, and AI will solve them step by step
+                Upload an image of your question paper, homework, or any academic problem
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Image Upload Area */}
-                <div 
-                  className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {imagePreview ? (
-                    <div className="space-y-2">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className="max-h-32 mx-auto rounded-lg object-contain"
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        {image?.name}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Upload className="h-12 w-12 text-muted-foreground mx-auto" />
-                      <p className="font-medium">Click to upload image</p>
-                      <p className="text-sm text-muted-foreground">
-                        Supports JPG, PNG, WebP
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Settings */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">
-                      Solution Language
-                    </label>
-                    <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {languages.map((lang) => (
-                          <SelectItem key={lang.code} value={lang.code}>
-                            {lang.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              <div 
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {imagePreview ? (
+                  <div className="space-y-2">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="max-h-48 mx-auto rounded-lg shadow-md"
+                    />
+                    <p className="font-medium">{image?.name}</p>
                   </div>
-
-                  {image && (
-                    <div className="space-y-2">
-                      <Button
-                        onClick={solveQuestions}
-                        disabled={isProcessing}
-                        className="w-full bg-gradient-primary hover:opacity-90 text-white"
-                      >
-                        <Zap className="h-4 w-4 mr-2" />
-                        {isProcessing ? 'Solving Questions...' : 'Solve Questions'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full"
-                      >
-                        Change Image
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Image className="h-12 w-12 text-muted-foreground mx-auto" />
+                    <p className="font-medium">Click to upload image</p>
+                    <p className="text-sm text-muted-foreground">
+                      Supports PNG, JPG, WEBP formats
+                    </p>
+                  </div>
+                )}
               </div>
               
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleImageSelect}
+                onChange={handleFileSelect}
                 className="hidden"
               />
+
+              {/* Language Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Solution Language</label>
+                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map((lang) => (
+                      <SelectItem key={lang} value={lang}>
+                        {lang}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {image && (
+                <div className="flex justify-center space-x-2">
+                  <Button
+                    onClick={solveQuestions}
+                    disabled={isProcessing}
+                    className="bg-gradient-primary hover:opacity-90 text-white"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {isProcessing ? 'Solving...' : 'Solve Questions'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Change Image
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Processing Indicator */}
           {isProcessing && (
             <Card className="shadow-soft border-border/50">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                  <div>
-                    <p className="font-medium">AI is analyzing your image...</p>
-                    <p className="text-sm text-muted-foreground">Detecting questions and generating step-by-step solutions</p>
-                  </div>
+              <CardContent className="p-6 text-center">
+                <div className="space-y-4">
+                  <Sparkles className="h-8 w-8 text-primary animate-spin mx-auto" />
+                  <p className="font-medium">Analyzing image and solving questions...</p>
+                  <p className="text-sm text-muted-foreground">
+                    AI is processing the image and generating step-by-step solutions
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -272,71 +230,53 @@ const ImageSolver = () => {
           {solutions.length > 0 && (
             <Card className="shadow-soft border-border/50">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Question Solutions</CardTitle>
-                    <CardDescription>
-                      Found {solutions.length} questions with detailed solutions
-                    </CardDescription>
-                  </div>
-                  <Button onClick={exportSolutions} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
+                <CardTitle>Solutions Found</CardTitle>
+                <CardDescription>
+                  {solutions.length} question(s) solved from your image
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {solutions.map((solution, index) => (
-                  <div key={index} className="space-y-4 p-6 border border-border/50 rounded-lg bg-card/50">
+                  <div key={index} className="space-y-4 p-4 border border-border/50 rounded-lg">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-3">
-                          <span className="bg-primary text-white text-sm px-2 py-1 rounded font-medium">
-                            Q{index + 1}
-                          </span>
-                          <h3 className="font-medium text-foreground">
-                            {solution.question}
-                          </h3>
-                        </div>
+                      <div className="flex items-start space-x-2 flex-1">
+                        <span className="bg-primary text-white text-sm px-2 py-1 rounded font-medium">
+                          Q{index + 1}
+                        </span>
+                        <h3 className="font-medium text-foreground flex-1">
+                          {solution.question}
+                        </h3>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => copyToClipboard(
-                          `Question: ${solution.question}\n\nSteps:\n${solution.steps.join('\n')}\n\nAnswer: ${solution.answer}\n\nExplanation: ${solution.explanation}`
+                          `Question: ${solution.question}\n\nSteps:\n${solution.steps.join('\n')}\n\nAnswer: ${solution.final_answer}\n\nExplanation: ${solution.explanation}`
                         )}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
-
-                    {/* Solution Steps */}
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-sm text-muted-foreground">Solution Steps:</h4>
-                      <ol className="space-y-2">
-                        {solution.steps.map((step, stepIndex) => (
-                          <li key={stepIndex} className="flex items-start space-x-3">
-                            <span className="bg-muted text-muted-foreground text-xs px-2 py-1 rounded font-medium min-w-[24px] text-center">
-                              {stepIndex + 1}
-                            </span>
-                            <span className="text-sm">{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-
-                    {/* Final Answer */}
-                    <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-primary">Final Answer:</span>
-                        <span className="font-mono font-medium">{solution.answer}</span>
+                    
+                    <div className="ml-8 space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Step-by-step solution:</p>
+                        <ol className="list-decimal list-inside space-y-1">
+                          {solution.steps.map((step, stepIndex) => (
+                            <li key={stepIndex} className="text-sm">{step}</li>
+                          ))}
+                        </ol>
                       </div>
-                    </div>
-
-                    {/* Explanation */}
-                    <div className="p-3 bg-muted/50 rounded-lg">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Explanation:</p>
-                      <p className="text-sm">{solution.explanation}</p>
+                      
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm font-medium text-green-800 mb-1">Final Answer:</p>
+                        <p className="text-sm text-green-700 font-mono">{solution.final_answer}</p>
+                      </div>
+                      
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Explanation:</p>
+                        <p className="text-sm">{solution.explanation}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
