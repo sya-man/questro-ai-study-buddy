@@ -1,9 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_CONFIG } from './supabase-config';
 
-const supabaseUrl = 'YOUR_SUPABASE_URL';
-const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
 // Database Types
 export interface Profile {

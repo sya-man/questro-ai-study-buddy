@@ -1,73 +1,105 @@
-# Welcome to your Lovable project
+# Questro - AI-Powered Learning Assistant
 
-## Project info
+Questro is a comprehensive AI-powered educational platform that helps students learn more effectively by transforming traditional study materials into interactive content.
 
-**URL**: https://lovable.dev/projects/f65dc278-7d88-41ec-9a18-f5a80d5da822
+## 🚀 Features
 
-## How can I edit this code?
+- **PDF to MCQ Generation**: Upload textbook PDFs and automatically generate multiple-choice questions
+- **Image Question Solver**: Take photos of question papers and get detailed solutions in any language
+- **Multilingual AI Chat**: Ask questions and get answers in any language with conversation memory
+- **Chat History**: All your conversations are saved and accessible
+- **API Key Management**: Securely store and manage your Gemini API keys
+- **Cross-Platform**: Works seamlessly on mobile and desktop devices
+- **Premium Design**: Clean, modern interface with purple theme
 
-There are several ways of editing your application.
+## 🛠️ Setup Instructions
 
-**Use Lovable**
+### 1. Connect to Supabase
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f65dc278-7d88-41ec-9a18-f5a80d5da822) and start prompting.
+This app requires Supabase for authentication and database functionality. You'll need to:
 
-Changes made via Lovable will be committed automatically to this repo.
+1. Create a new project in [Supabase](https://supabase.com)
+2. Get your project URL and anon key from the API settings
+3. Create a `.env.local` file in your project root:
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-**Edit a file directly in GitHub**
+### 2. Set up Database Tables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Run the SQL commands from `src/lib/supabase-config.ts` in your Supabase SQL editor to create the required tables and policies.
 
-**Use GitHub Codespaces**
+### 3. Get Gemini API Key
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Users will need a Gemini API key to use the AI features:
 
-## What technologies are used for this project?
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Create a new API key
+4. Copy the key and paste it in the app's API Key Manager
 
-This project is built with:
+## 📁 Project Structure
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+src/
+├── components/
+│   ├── auth/           # Authentication components
+│   ├── chat/           # Chat interface
+│   ├── history/        # Chat history
+│   ├── layout/         # Layout components (sidebar, etc.)
+│   ├── mcq/           # PDF to MCQ generation
+│   ├── settings/       # User settings and API key management
+│   ├── solver/         # Image question solver
+│   └── ui/            # Reusable UI components
+├── lib/               # Utility functions and configurations
+├── pages/             # Main page components
+└── hooks/             # Custom React hooks
+```
 
-## How can I deploy this project?
+## 🎨 Design System
 
-Simply open [Lovable](https://lovable.dev/projects/f65dc278-7d88-41ec-9a18-f5a80d5da822) and click on Share -> Publish.
+The app uses a comprehensive design system with:
+- Custom CSS variables for colors and themes
+- Tailwind CSS for styling
+- Responsive design for all screen sizes
+- Purple-themed gradient system
+- Premium animations and effects
 
-## Can I connect a custom domain to my Lovable project?
+## 🔒 Security
 
-Yes, you can!
+- Row Level Security (RLS) policies in Supabase
+- Secure API key storage encrypted in the database
+- Authentication required for all features
+- User data isolation and privacy
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🚀 Getting Started
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up Supabase and environment variables
+4. Run the development server: `npm run dev`
+5. Open the app and sign up for an account
+6. Add your Gemini API key in the settings
+7. Start using the AI-powered features!
+
+## 📱 Mobile Support
+
+Questro is fully responsive and works great on:
+- iOS Safari
+- Android Chrome
+- Desktop browsers
+- Tablet devices
+
+## 🤖 AI Features
+
+All AI functionality is powered by Google's Gemini API:
+- Natural language processing for question generation
+- Optical Character Recognition (OCR) for image processing
+- Multilingual support for global users
+- Context-aware responses with memory
+
+---
+
+Made with ❤️ for learners worldwide

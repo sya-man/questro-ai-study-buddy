@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
@@ -24,9 +25,11 @@ const Landing = () => {
             Join thousands of students already using Questro to ace their studies with AI-powered assistance.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="px-8 py-6 text-lg shadow-large">
-              Start Free Trial
-            </Button>
+            <Link to="/app">
+              <Button size="lg" variant="secondary" className="px-8 py-6 text-lg shadow-large">
+                Start Free Trial
+              </Button>
+            </Link>
             <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 px-8 py-6 text-lg">
               View Pricing
             </Button>
