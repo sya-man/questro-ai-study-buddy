@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Key, Trash2, Edit3, ExternalLink, Shield } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 const ApiKeyManager = () => {
@@ -26,7 +26,7 @@ const ApiKeyManager = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('gemini_api_key')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -64,7 +64,7 @@ const ApiKeyManager = () => {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user.id,
+          user_id: user.id,
           email: user.email!,
           gemini_api_key: apiKey,
           updated_at: new Date().toISOString(),
@@ -101,7 +101,7 @@ const ApiKeyManager = () => {
           gemini_api_key: null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', user.id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
