@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_CONFIG } from './supabase-config';
 
-export const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+// Use fallback values to prevent app crash when Supabase is not configured
+const supabaseUrl = SUPABASE_CONFIG.url || 'https://placeholder.supabase.co';
+const supabaseAnonKey = SUPABASE_CONFIG.anonKey || 'placeholder-key';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Database Types
 export interface Profile {
