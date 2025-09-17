@@ -15,18 +15,34 @@ interface Message {
 }
 
 const ChatInterface = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Hello! I\'m your AI learning assistant. I can help you with questions, solve problems, and explain concepts in any language. How can I help you today?',
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId] = useState(`session_${Date.now()}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load messages from localStorage on component mount
+  useEffect(() => {
+    const chatHistory = JSON.parse(localStorage.getItem('questro_chat_history') || '{}');
+    const currentSession = chatHistory[sessionId];
+    
+    if (currentSession?.messages) {
+      setMessages(currentSession.messages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      })));
+    } else {
+      // Set welcome message if no previous messages
+      const welcomeMessage = {
+        id: '1',
+        role: 'assistant' as const,
+        content: 'Hello! I\'m your AI learning assistant. I can help you with questions, solve problems, and explain concepts in any language. How can I help you today?',
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [sessionId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -55,7 +71,7 @@ const ChatInterface = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      let sessionId = 'default-session';
+      // Use the component's sessionId
       
       const response = await supabase.functions.invoke('chat-ai', {
         body: { 
@@ -73,7 +89,21 @@ const ChatInterface = () => {
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => {
+        const finalMessages = [...prev, assistantMessage];
+        
+        // Save to localStorage
+        const chatHistory = JSON.parse(localStorage.getItem('questro_chat_history') || '{}');
+        chatHistory[sessionId] = {
+          id: sessionId,
+          title: `Chat Session ${sessionId.slice(-8)}`,
+          messages: finalMessages,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('questro_chat_history', JSON.stringify(chatHistory));
+        
+        return finalMessages;
+      });
       setIsLoading(false);
     } catch (error: any) {
       toast({

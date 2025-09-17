@@ -87,11 +87,24 @@ const ImageSolver = () => {
 
       if (response.error) throw response.error;
 
-      setSolutions(response.data.solutions || []);
+      const solutions = response.data.solutions || [];
+      setSolutions(solutions);
+      
+      // Save to localStorage
+      const sessionId = `image_${Date.now()}`;
+      const imageHistory = JSON.parse(localStorage.getItem('questro_image_history') || '{}');
+      imageHistory[sessionId] = {
+        id: sessionId,
+        title: `${selectedLanguage} Image Solutions`,
+        solutions: solutions,
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+      localStorage.setItem('questro_image_history', JSON.stringify(imageHistory));
       
       toast({
         title: 'Questions Solved!',
-        description: `Found and solved ${response.data.solutions?.length || 0} questions in the image.`,
+        description: `Found and solved ${solutions.length || 0} questions in the image.`,
       });
     } catch (error: any) {
       toast({

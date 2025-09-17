@@ -69,7 +69,7 @@ const PdfMcqGenerator = () => {
       const response = await supabase.functions.invoke('generate-mcq', {
         body: { 
           pdfText: fullText,
-          sessionId: 'mcq-session'
+          sessionId: `mcq_${Date.now()}`
         }
       });
 
@@ -79,6 +79,19 @@ const PdfMcqGenerator = () => {
       const generatedQuestions = response.data.questions || [];
       setQuestions(generatedQuestions);
       setSelectedAnswers(new Array(generatedQuestions.length).fill(-1));
+      
+      // Save to localStorage
+      const sessionId = `mcq_${Date.now()}`;
+      const mcqHistory = JSON.parse(localStorage.getItem('questro_mcq_history') || '{}');
+      mcqHistory[sessionId] = {
+        id: sessionId,
+        title: `MCQ from ${file.name}`,
+        questions: generatedQuestions,
+        fileName: file.name,
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+      localStorage.setItem('questro_mcq_history', JSON.stringify(mcqHistory));
       
       toast({
         title: 'MCQs Generated Successfully!',

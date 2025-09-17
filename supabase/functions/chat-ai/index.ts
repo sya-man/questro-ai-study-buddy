@@ -36,14 +36,6 @@ serve(async (req) => {
       throw new Error('Gemini API key not found. Please add your API key in settings.')
     }
 
-    // Save user message
-    await supabase.from('chat_messages').insert({
-      session_id: sessionId,
-      user_id: user.id,
-      role: 'user',
-      content: message
-    })
-
     // Call Gemini AI
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${profile.gemini_api_key}`, {
       method: 'POST',
@@ -59,14 +51,6 @@ serve(async (req) => {
 
     const aiData = await response.json()
     const aiResponse = aiData.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not process your request.'
-
-    // Save AI response
-    await supabase.from('chat_messages').insert({
-      session_id: sessionId,
-      user_id: user.id,
-      role: 'assistant',
-      content: aiResponse
-    })
 
     return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

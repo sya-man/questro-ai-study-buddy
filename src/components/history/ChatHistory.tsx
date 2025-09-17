@@ -94,53 +94,67 @@ const ChatHistory = () => {
 
   const loadSessions = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Load chat sessions from database
-      const { data: messages, error } = await supabase
-        .from('chat_messages')
-        .select('session_id, content, role, created_at, updated_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (messages && messages.length > 0) {
-        // Group messages by session and create session objects
-        const sessionMap = new Map<string, ChatSession>();
-        
-        messages.forEach(message => {
-          if (!sessionMap.has(message.session_id)) {
-            sessionMap.set(message.session_id, {
-              id: message.session_id,
-              title: `Chat Session ${message.session_id.slice(-8)}`,
-              type: 'chat',
-              lastMessage: '',
-              messageCount: 0,
-              createdAt: new Date(message.created_at),
-              updatedAt: new Date(message.updated_at)
-            });
-          }
-          
-          const session = sessionMap.get(message.session_id)!;
-          session.messageCount += 1;
-          
-          // Set last message from user or assistant
-          if (message.role === 'user' || message.role === 'assistant') {
-            session.lastMessage = message.content.substring(0, 100) + (message.content.length > 100 ? '...' : '');
-          }
-          
-          // Update last updated time
-          const messageDate = new Date(message.updated_at);
-          if (messageDate > session.updatedAt) {
-            session.updatedAt = messageDate;
-          }
-        });
-        
-        setSessions(Array.from(sessionMap.values()));
+      // Load chat sessions from localStorage
+      const chatHistory = JSON.parse(localStorage.getItem('questro_chat_history') || '{}');
+      const mcqHistory = JSON.parse(localStorage.getItem('questro_mcq_history') || '{}');
+      const imageHistory = JSON.parse(localStorage.getItem('questro_image_history') || '{}');
+      
+      const loadedSessions: ChatSession[] = [];
+      
+      // Load chat sessions
+      Object.entries(chatHistory).forEach(([sessionId, data]: [string, any]) => {
+        if (data.messages && data.messages.length > 0) {
+          const lastMessage = data.messages[data.messages.length - 1];
+          loadedSessions.push({
+            id: sessionId,
+            title: data.title || `Chat Session ${sessionId.slice(-8)}`,
+            type: 'chat',
+            lastMessage: lastMessage.content.substring(0, 100) + (lastMessage.content.length > 100 ? '...' : ''),
+            messageCount: data.messages.length,
+            createdAt: new Date(data.messages[0].timestamp),
+            updatedAt: new Date(data.lastUpdated || data.messages[data.messages.length - 1].timestamp)
+          });
+        }
+      });
+      
+      // Load MCQ sessions
+      Object.entries(mcqHistory).forEach(([sessionId, data]: [string, any]) => {
+        if (data.questions && data.questions.length > 0) {
+          loadedSessions.push({
+            id: sessionId,
+            title: data.title || `MCQ Session ${sessionId.slice(-8)}`,
+            type: 'pdf-mcq',
+            lastMessage: `Generated ${data.questions.length} MCQ questions`,
+            messageCount: data.questions.length,
+            createdAt: new Date(data.createdAt),
+            updatedAt: new Date(data.lastUpdated || data.createdAt)
+          });
+        }
+      });
+      
+      // Load image sessions
+      Object.entries(imageHistory).forEach(([sessionId, data]: [string, any]) => {
+        if (data.solutions && data.solutions.length > 0) {
+          const lastSolution = data.solutions[data.solutions.length - 1];
+          loadedSessions.push({
+            id: sessionId,
+            title: data.title || `Image Solution ${sessionId.slice(-8)}`,
+            type: 'image-solver',
+            lastMessage: lastSolution.solution.substring(0, 100) + (lastSolution.solution.length > 100 ? '...' : ''),
+            messageCount: data.solutions.length,
+            createdAt: new Date(data.createdAt),
+            updatedAt: new Date(data.lastUpdated || data.createdAt)
+          });
+        }
+      });
+      
+      // Sort by last update date
+      loadedSessions.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      
+      if (loadedSessions.length > 0) {
+        setSessions(loadedSessions);
       } else {
-        // If no messages, show the mock data for demonstration
+        // If no local data, show the mock data for demonstration
         setSessions(mockSessions);
       }
     } catch (error: any) {
@@ -149,7 +163,7 @@ const ChatHistory = () => {
       setSessions(mockSessions);
       toast({
         title: 'Error',
-        description: 'Failed to load chat history. Showing sample data.',
+        description: 'Failed to load chat history from local storage. Showing sample data.',
         variant: 'destructive',
       });
     } finally {
@@ -179,10 +193,33 @@ const ChatHistory = () => {
 
   const deleteSession = async (sessionId: string) => {
     try {
+      const sessionToDelete = sessions.find(s => s.id === sessionId);
+      if (!sessionToDelete) return;
+      
+      // Delete from appropriate localStorage based on session type
+      let storageKey = '';
+      switch (sessionToDelete.type) {
+        case 'chat':
+          storageKey = 'questro_chat_history';
+          break;
+        case 'pdf-mcq':
+          storageKey = 'questro_mcq_history';
+          break;
+        case 'image-solver':
+          storageKey = 'questro_image_history';
+          break;
+      }
+      
+      if (storageKey) {
+        const history = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        delete history[sessionId];
+        localStorage.setItem(storageKey, JSON.stringify(history));
+      }
+      
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       toast({
         title: 'Deleted',
-        description: 'Chat session deleted successfully.',
+        description: 'Session deleted successfully.',
       });
     } catch (error: any) {
       toast({
