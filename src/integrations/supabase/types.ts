@@ -44,6 +44,42 @@ export type Database = {
         }
         Relationships: []
       }
+      mcq_questions: {
+        Row: {
+          correct_answer: number
+          created_at: string
+          explanation: string | null
+          id: string
+          options: string[]
+          question: string
+          session_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          correct_answer: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          options: string[]
+          question: string
+          session_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          correct_answer?: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          options?: string[]
+          question?: string
+          session_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

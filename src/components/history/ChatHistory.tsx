@@ -94,12 +94,62 @@ const ChatHistory = () => {
 
   const loadSessions = async () => {
     try {
-      // In a real app, this would fetch from Supabase
-      setSessions(mockSessions);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load chat sessions from database
+      const { data: messages, error } = await supabase
+        .from('chat_messages')
+        .select('session_id, content, role, created_at, updated_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (messages && messages.length > 0) {
+        // Group messages by session and create session objects
+        const sessionMap = new Map<string, ChatSession>();
+        
+        messages.forEach(message => {
+          if (!sessionMap.has(message.session_id)) {
+            sessionMap.set(message.session_id, {
+              id: message.session_id,
+              title: `Chat Session ${message.session_id.slice(-8)}`,
+              type: 'chat',
+              lastMessage: '',
+              messageCount: 0,
+              createdAt: new Date(message.created_at),
+              updatedAt: new Date(message.updated_at)
+            });
+          }
+          
+          const session = sessionMap.get(message.session_id)!;
+          session.messageCount += 1;
+          
+          // Set last message from user or assistant
+          if (message.role === 'user' || message.role === 'assistant') {
+            session.lastMessage = message.content.substring(0, 100) + (message.content.length > 100 ? '...' : '');
+          }
+          
+          // Update last updated time
+          const messageDate = new Date(message.updated_at);
+          if (messageDate > session.updatedAt) {
+            session.updatedAt = messageDate;
+          }
+        });
+        
+        setSessions(Array.from(sessionMap.values()));
+      } else {
+        // If no messages, show the mock data for demonstration
+        setSessions(mockSessions);
+      }
     } catch (error: any) {
+      console.error('Error loading chat history:', error);
+      // Fall back to mock data on error
+      setSessions(mockSessions);
       toast({
         title: 'Error',
-        description: 'Failed to load chat history.',
+        description: 'Failed to load chat history. Showing sample data.',
         variant: 'destructive',
       });
     } finally {
