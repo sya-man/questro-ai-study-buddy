@@ -29,8 +29,8 @@ const Header = () => {
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-            Sign In
+          <Button variant="ghost" className="text-muted-foreground hover:text-foreground" asChild>
+            <a href="/app">Sign In</a>
           </Button>
           <Button className="bg-gradient-primary hover:opacity-90 text-white shadow-soft" asChild>
             <a href="/app">Get Started</a>
@@ -59,7 +59,9 @@ const Header = () => {
                 Get API Key
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border/50">
-                <Button variant="ghost">Sign In</Button>
+                <Button variant="ghost" asChild>
+                  <a href="/app">Sign In</a>
+                </Button>
                 <Button className="bg-gradient-primary hover:opacity-90 text-white" asChild>
                   <a href="/app">Get Started</a>
                 </Button>

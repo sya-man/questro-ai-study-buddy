@@ -29,7 +29,7 @@ serve(async (req) => {
     const { data: profile } = await supabase
       .from('profiles')
       .select('gemini_api_key')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (!profile?.gemini_api_key) {
