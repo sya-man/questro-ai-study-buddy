@@ -58,7 +58,7 @@ const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
             <Brain className="h-5 w-5 text-white" />
           </div>
-          {!isCollapsed && (
+          {(!isCollapsed || isMobileOpen) && (
             <span className="font-bold text-lg text-sidebar-foreground">Questro</span>
           )}
         </div>
@@ -84,7 +84,7 @@ const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
               }}
             >
               <Icon className="h-4 w-4" />
-              {!isCollapsed && <span className="ml-2">{item.label}</span>}
+              {(!isCollapsed || isMobileOpen) && <span className="ml-2">{item.label}</span>}
             </Button>
           );
         })}
@@ -98,7 +98,7 @@ const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
           onClick={handleSignOut}
         >
           <LogOut className="h-4 w-4" />
-          {!isCollapsed && <span className="ml-2">Sign Out</span>}
+          {(!isCollapsed || isMobileOpen) && <span className="ml-2">Sign Out</span>}
         </Button>
       </div>
     </div>
