@@ -19,6 +19,7 @@ serve(async (req) => {
     }
 
     // Call Gemini AI
+    console.log('Calling Gemini API with message:', message)
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -31,8 +32,25 @@ serve(async (req) => {
       })
     })
 
+    console.log('Gemini API response status:', response.status)
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Gemini API error:', errorData)
+      throw new Error(`Gemini API error: ${errorData.error?.message || 'Unknown error'}`)
+    }
+
     const aiData = await response.json()
-    const aiResponse = aiData.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not process your request.'
+    console.log('Gemini API response data:', aiData)
+    
+    if (!aiData.candidates || aiData.candidates.length === 0) {
+      throw new Error('No response candidates from Gemini API')
+    }
+
+    const aiResponse = aiData.candidates[0]?.content?.parts?.[0]?.text
+    if (!aiResponse) {
+      throw new Error('Empty response from Gemini API')
+    }
 
     return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
