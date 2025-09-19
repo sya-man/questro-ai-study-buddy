@@ -55,10 +55,11 @@ const ChatInterface = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
+    const messageContent = inputValue.trim();
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputValue,
+      content: messageContent,
       timestamp: new Date()
     };
 
@@ -71,8 +72,7 @@ const ChatInterface = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Use the component's sessionId
-      
+      // Get API key from localStorage
       const apiKey = localStorage.getItem('questro_gemini_api_key');
       if (!apiKey) {
         toast({
@@ -80,12 +80,13 @@ const ChatInterface = () => {
           description: 'Please add your Gemini API key in settings first.',
           variant: 'destructive',
         });
+        setIsLoading(false);
         return;
       }
 
       const response = await supabase.functions.invoke('chat-ai', {
         body: { 
-          message: inputValue,
+          message: messageContent,
           sessionId: sessionId,
           apiKey: apiKey
         }
