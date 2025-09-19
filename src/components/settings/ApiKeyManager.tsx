@@ -18,23 +18,11 @@ const ApiKeyManager = () => {
     loadApiKey();
   }, []);
 
-  const loadApiKey = async () => {
+  const loadApiKey = () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('gemini_api_key')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data?.gemini_api_key) {
-        setApiKey(data.gemini_api_key);
+      const savedKey = localStorage.getItem('questro_gemini_api_key');
+      if (savedKey) {
+        setApiKey(savedKey);
         setHasKey(true);
       }
     } catch (error: any) {
@@ -46,7 +34,7 @@ const ApiKeyManager = () => {
     }
   };
 
-  const saveApiKey = async () => {
+  const saveApiKey = () => {
     if (!apiKey.trim()) {
       toast({
         title: 'Error',
@@ -58,20 +46,7 @@ const ApiKeyManager = () => {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
-          email: user.email!,
-          gemini_api_key: apiKey,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (error) throw error;
-
+      localStorage.setItem('questro_gemini_api_key', apiKey);
       setHasKey(true);
       setIsEditing(false);
       toast({
@@ -89,22 +64,10 @@ const ApiKeyManager = () => {
     }
   };
 
-  const deleteApiKey = async () => {
+  const deleteApiKey = () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          gemini_api_key: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
+      localStorage.removeItem('questro_gemini_api_key');
       setApiKey('');
       setHasKey(false);
       setIsEditing(false);

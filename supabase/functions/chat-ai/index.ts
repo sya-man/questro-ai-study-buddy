@@ -12,32 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { message, sessionId } = await req.json()
+    const { message, sessionId, apiKey } = await req.json()
     
-    const authHeader = req.headers.get('Authorization')!
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
-
-    // Get user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    // Get user's Gemini API key
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('gemini_api_key')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!profile?.gemini_api_key) {
-      throw new Error('Gemini API key not found. Please add your API key in settings.')
+    if (!apiKey) {
+      throw new Error('Gemini API key not provided. Please add your API key in settings.')
     }
 
     // Call Gemini AI
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${profile.gemini_api_key}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

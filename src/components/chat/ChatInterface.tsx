@@ -73,10 +73,21 @@ const ChatInterface = () => {
 
       // Use the component's sessionId
       
+      const apiKey = localStorage.getItem('questro_gemini_api_key');
+      if (!apiKey) {
+        toast({
+          title: 'Error',
+          description: 'Please add your Gemini API key in settings first.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const response = await supabase.functions.invoke('chat-ai', {
         body: { 
           message: inputValue,
-          sessionId: sessionId
+          sessionId: sessionId,
+          apiKey: apiKey
         }
       });
 
