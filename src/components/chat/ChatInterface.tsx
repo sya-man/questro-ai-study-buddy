@@ -3,15 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User, Paperclip } from 'lucide-react';
+import { Send, Bot, User, Paperclip, Copy, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import TypewriterText from './TypewriterText';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  isTyping?: boolean;
 }
 
 const ChatInterface = () => {
@@ -19,8 +21,31 @@ const ChatInterface = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(`session_${Date.now()}`);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const copyToClipboard = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+      toast({
+        title: 'Copied!',
+        description: 'Message copied to clipboard.',
+      });
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 2000);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to copy message.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Load messages from localStorage on component mount
   useEffect(() => {
@@ -98,7 +123,8 @@ const ChatInterface = () => {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: response.data.response,
-        timestamp: new Date()
+        timestamp: new Date(),
+        isTyping: true
       };
       
       setMessages(prev => {
@@ -109,7 +135,7 @@ const ChatInterface = () => {
         chatHistory[sessionId] = {
           id: sessionId,
           title: `Chat Session ${sessionId.slice(-8)}`,
-          messages: finalMessages,
+          messages: finalMessages.map(msg => ({ ...msg, isTyping: false })), // Remove typing state when saving
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('questro_chat_history', JSON.stringify(chatHistory));
@@ -173,12 +199,41 @@ const ChatInterface = () => {
                     <Bot className="h-4 w-4 text-white" />
                   )}
                 </div>
-                <Card className={`p-4 shadow-soft border-border/50 ${
+                <Card className={`p-4 shadow-soft border-border/50 relative group ${
                   message.role === 'user' 
                     ? 'bg-primary/10 border-primary/20' 
                     : 'bg-card'
                 }`}>
-                  <p className="text-foreground whitespace-pre-wrap">{message.content}</p>
+                  {message.role === 'assistant' && message.isTyping ? (
+                    <TypewriterText 
+                      text={message.content}
+                      onComplete={() => {
+                        setMessages(prev => 
+                          prev.map(msg => 
+                            msg.id === message.id 
+                              ? { ...msg, isTyping: false }
+                              : msg
+                          )
+                        );
+                      }}
+                    />
+                  ) : (
+                    <p className="text-foreground whitespace-pre-wrap">{message.content}</p>
+                  )}
+                  
+                  {/* Copy Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 h-auto"
+                    onClick={() => copyToClipboard(message.content, message.id)}
+                  >
+                    {copiedMessageId === message.id ? (
+                      <Check className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <Copy className="h-3 w-3 text-muted-foreground" />
+                    )}
+                  </Button>
                 </Card>
               </div>
             </div>

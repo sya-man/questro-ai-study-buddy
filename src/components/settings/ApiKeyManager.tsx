@@ -246,7 +246,7 @@ const ApiKeyManager = () => {
               </div>
               
               <Button variant="outline" className="w-full" asChild>
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">
+                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Open Google AI Studio
                 </a>

@@ -32,9 +32,11 @@ const ApiKeyGuide = () => {
                   <p className="text-muted-foreground mb-4">
                     Go to Google AI Studio to access the Gemini API. You'll need a Google account to proceed.
                   </p>
-                  <Button className="bg-gradient-primary hover:opacity-90 text-white" size="sm">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Open AI Studio
+                  <Button className="bg-gradient-primary hover:opacity-90 text-white" size="sm" asChild>
+                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open AI Studio
+                    </a>
                   </Button>
                 </div>
               </div>
