@@ -27,12 +27,9 @@ const Landing = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/app">
               <Button size="lg" variant="secondary" className="px-8 py-6 text-lg shadow-large">
-                Start Free Trial
+                Get Started
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 px-8 py-6 text-lg">
-              View Pricing
-            </Button>
           </div>
         </div>
       </section>
@@ -66,7 +63,7 @@ const Landing = () => {
           
           <div className="mt-8 pt-8 border-t border-border/50 text-center">
             <p className="text-muted-foreground flex items-center justify-center gap-1">
-              Made with <Heart className="h-4 w-4 text-red-500" /> for learners worldwide
+              Made by SYA Zone
             </p>
           </div>
         </div>
