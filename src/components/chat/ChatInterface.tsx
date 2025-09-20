@@ -179,9 +179,6 @@ const ChatInterface = () => {
                     : 'bg-card'
                 }`}>
                   <p className="text-foreground whitespace-pre-wrap">{message.content}</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {message.timestamp.toLocaleTimeString()}
-                  </p>
                 </Card>
               </div>
             </div>

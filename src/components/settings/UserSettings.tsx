@@ -14,7 +14,9 @@ import {
   Shield, 
   Download,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Camera,
+  Upload
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -24,7 +26,8 @@ const UserSettings = () => {
     fullName: '',
     email: '',
     preferredLanguage: 'en',
-    timezone: 'UTC'
+    timezone: 'UTC',
+    avatarUrl: ''
   });
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
@@ -33,6 +36,7 @@ const UserSettings = () => {
   });
   const [loading, setLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const languages = [
     { code: 'en', name: 'English' },
@@ -47,6 +51,7 @@ const UserSettings = () => {
     { code: 'zh', name: 'Chinese' },
     { code: 'hi', name: 'Hindi' },
     { code: 'ar', name: 'Arabic' },
+    { code: 'bn', name: 'Bengali' },
   ];
 
   const timezones = [
@@ -70,11 +75,19 @@ const UserSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Get profile data from profiles table
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
       setProfile({
-        fullName: user.user_metadata?.full_name || '',
+        fullName: profileData?.full_name || user.user_metadata?.full_name || '',
         email: user.email || '',
         preferredLanguage: 'en',
-        timezone: 'UTC'
+        timezone: 'UTC',
+        avatarUrl: profileData?.avatar_url || ''
       });
     } catch (error: any) {
       toast({
@@ -88,7 +101,11 @@ const UserSettings = () => {
   const updateProfile = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      // Update user metadata
+      const { error: authError } = await supabase.auth.updateUser({
         data: {
           full_name: profile.fullName,
           preferred_language: profile.preferredLanguage,
@@ -96,7 +113,19 @@ const UserSettings = () => {
         }
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
+
+      // Update or create profile in database
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          email: user.email,
+          full_name: profile.fullName,
+          avatar_url: profile.avatarUrl
+        });
+
+      if (profileError) throw profileError;
 
       toast({
         title: 'Success',
@@ -110,6 +139,50 @@ const UserSettings = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+
+      const file = event.target.files[0];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setProfile(prev => ({ ...prev, avatarUrl: data.publicUrl }));
+
+      toast({
+        title: 'Success',
+        description: 'Avatar uploaded successfully!',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -189,6 +262,39 @@ const UserSettings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Profile Picture */}
+              <div className="flex items-center space-x-4 mb-6">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center overflow-hidden">
+                    {profile.avatarUrl ? (
+                      <img 
+                        src={profile.avatarUrl} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-10 w-10 text-white" />
+                    )}
+                  </div>
+                  <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-colors">
+                    <Camera className="h-3 w-3 text-white" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={uploadAvatar}
+                      disabled={uploading}
+                      className="sr-only"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Profile Picture</p>
+                  <p className="text-sm text-muted-foreground">
+                    {uploading ? 'Uploading...' : 'Click camera icon to change'}
+                  </p>
+                </div>
+              </div>
+              
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="fullName">Full Name</Label>
