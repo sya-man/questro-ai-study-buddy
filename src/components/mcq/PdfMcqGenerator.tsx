@@ -48,7 +48,7 @@ const PdfMcqGenerator = () => {
       // Extract text from PDF
       const pdfData = new Uint8Array(await file.arrayBuffer());
       const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js`;
       
       setProgress(20);
       
