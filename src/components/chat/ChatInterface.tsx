@@ -234,6 +234,28 @@ const ChatInterface = () => {
                       <Copy className="h-3 w-3 text-muted-foreground" />
                     )}
                   </Button>
+                  
+                  {/* Copy Button Below Text */}
+                  <div className="mt-3 pt-2 border-t border-border/30">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => copyToClipboard(message.content, message.id)}
+                    >
+                      {copiedMessageId === message.id ? (
+                        <>
+                          <Check className="h-3 w-3 mr-1 text-green-600" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </Card>
               </div>
             </div>
