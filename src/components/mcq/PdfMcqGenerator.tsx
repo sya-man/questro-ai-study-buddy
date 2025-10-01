@@ -48,7 +48,10 @@ const PdfMcqGenerator = () => {
       // Extract text from PDF
       const pdfData = new Uint8Array(await file.arrayBuffer());
       const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js`;
+      
+      // Use the worker from node_modules instead of CDN
+      const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
       
       setProgress(20);
       
