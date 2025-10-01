@@ -12,29 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { pdfText, sessionId } = await req.json()
+    const { pdfText, sessionId, apiKey } = await req.json()
     
-    const authHeader = req.headers.get('Authorization')!
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
-
-    // Get user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    // Get user's Gemini API key
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('gemini_api_key')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!profile?.gemini_api_key) {
-      throw new Error('Gemini API key not found. Please add your API key in settings.')
+    if (!apiKey) {
+      throw new Error('Gemini API key not provided. Please add your API key in settings.')
     }
+    
+    console.log('Processing PDF text of length:', pdfText?.length)
 
     const prompt = `Generate 5 multiple choice questions from this text. Return ONLY a JSON array with this format:
 [{
@@ -47,7 +31,8 @@ serve(async (req) => {
 Text: ${pdfText.substring(0, 4000)}`
 
     // Call Gemini AI
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${profile.gemini_api_key}`, {
+    console.log('Calling Gemini API for MCQ generation')
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -57,8 +42,19 @@ Text: ${pdfText.substring(0, 4000)}`
       })
     })
 
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Gemini API error:', errorData)
+      throw new Error(`Gemini API error: ${errorData.error?.message || 'Unknown error'}`)
+    }
+
     const aiData = await response.json()
+    console.log('Gemini API response received')
     const aiResponse = aiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    
+    if (!aiResponse) {
+      throw new Error('Empty response from Gemini API')
+    }
 
     // Extract JSON from response
     let questions = []
@@ -66,21 +62,12 @@ Text: ${pdfText.substring(0, 4000)}`
       const jsonMatch = aiResponse.match(/\[[\s\S]*\]/)
       if (jsonMatch) {
         questions = JSON.parse(jsonMatch[0])
+        console.log(`Successfully parsed ${questions.length} questions`)
+      } else {
+        console.error('No JSON array found in response')
       }
     } catch (e) {
       console.error('Failed to parse AI response:', e)
-    }
-
-    // Save questions to database
-    for (const q of questions) {
-      await supabase.from('mcq_questions').insert({
-        user_id: user.id,
-        session_id: sessionId,
-        question: q.question,
-        options: q.options,
-        correct_answer: q.correct_answer,
-        explanation: q.explanation
-      })
     }
 
     return new Response(JSON.stringify({ questions }), {

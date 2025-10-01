@@ -65,11 +65,18 @@ const PdfMcqGenerator = () => {
 
       setProgress(70);
 
+      // Get API key from localStorage
+      const apiKey = localStorage.getItem('questro_gemini_api_key');
+      if (!apiKey) {
+        throw new Error('Gemini API key not found. Please add your API key in settings first.');
+      }
+
       // Call Supabase Edge Function to generate MCQs
       const response = await supabase.functions.invoke('generate-mcq', {
         body: { 
           pdfText: fullText,
-          sessionId: `mcq_${Date.now()}`
+          sessionId: `mcq_${Date.now()}`,
+          apiKey: apiKey
         }
       });
 
