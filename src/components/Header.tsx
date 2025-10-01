@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Brain, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,10 +31,10 @@ const Header = () => {
 
         <div className="hidden md:flex items-center space-x-4">
           <Button variant="ghost" className="text-muted-foreground hover:text-foreground" asChild>
-            <a href="/app">Sign In</a>
+            <Link to="/app">Sign In</Link>
           </Button>
           <Button className="bg-gradient-primary hover:opacity-90 text-white shadow-soft" asChild>
-            <a href="/app">Get Started</a>
+            <Link to="/app">Get Started</Link>
           </Button>
         </div>
 
@@ -60,10 +61,10 @@ const Header = () => {
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border/50">
                 <Button variant="ghost" asChild>
-                  <a href="/app">Sign In</a>
+                  <Link to="/app">Sign In</Link>
                 </Button>
                 <Button className="bg-gradient-primary hover:opacity-90 text-white" asChild>
-                  <a href="/app">Get Started</a>
+                  <Link to="/app">Get Started</Link>
                 </Button>
               </div>
             </nav>
