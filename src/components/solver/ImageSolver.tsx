@@ -77,11 +77,18 @@ const ImageSolver = () => {
       
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
 
+      // Get API key from localStorage
+      const apiKey = localStorage.getItem('questro_gemini_api_key');
+      if (!apiKey) {
+        throw new Error('Gemini API key not found. Please add your API key in settings first.');
+      }
+
       // Call Supabase Edge Function to solve questions
       const response = await supabase.functions.invoke('solve-image', {
         body: { 
           imageData: imageData,
-          language: selectedLanguage
+          language: selectedLanguage,
+          apiKey: apiKey
         }
       });
 

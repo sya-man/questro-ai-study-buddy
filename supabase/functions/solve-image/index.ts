@@ -12,29 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { imageData, language = 'English' } = await req.json()
+    const { imageData, language = 'English', apiKey } = await req.json()
     
-    const authHeader = req.headers.get('Authorization')!
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
-
-    // Get user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    // Get user's Gemini API key
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('gemini_api_key')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!profile?.gemini_api_key) {
-      throw new Error('Gemini API key not found. Please add your API key in settings.')
+    if (!apiKey) {
+      throw new Error('Gemini API key not provided. Please add your API key in settings.')
     }
+    
+    console.log('Processing image analysis request in:', language)
 
     const prompt = `Analyze this image and solve all mathematical questions, physics problems, chemistry equations, or any academic questions you can identify. 
     
@@ -48,8 +32,9 @@ serve(async (req) => {
     
     If you cannot identify any solvable questions, return an empty array.`
 
-    // Call Gemini AI Vision
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${profile.gemini_api_key}`, {
+    // Call Gemini AI Vision (using gemini-1.5-flash which supports vision)
+    console.log('Calling Gemini API for image analysis')
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -67,8 +52,19 @@ serve(async (req) => {
       })
     })
 
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Gemini API error:', errorData)
+      throw new Error(`Gemini API error: ${errorData.error?.message || 'Unknown error'}`)
+    }
+
     const aiData = await response.json()
+    console.log('Gemini API response received')
     const aiResponse = aiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    
+    if (!aiResponse) {
+      throw new Error('Empty response from Gemini API')
+    }
 
     // Extract JSON from response
     let solutions = []
@@ -76,6 +72,9 @@ serve(async (req) => {
       const jsonMatch = aiResponse.match(/\[[\s\S]*\]/)
       if (jsonMatch) {
         solutions = JSON.parse(jsonMatch[0])
+        console.log(`Successfully parsed ${solutions.length} solutions`)
+      } else {
+        console.error('No JSON array found in response')
       }
     } catch (e) {
       console.error('Failed to parse AI response:', e)
@@ -92,8 +91,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
+    console.error('Error in solve-image function:', error)
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
