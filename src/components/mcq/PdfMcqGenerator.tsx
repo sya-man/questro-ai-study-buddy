@@ -49,9 +49,8 @@ const PdfMcqGenerator = () => {
       const pdfData = new Uint8Array(await file.arrayBuffer());
       const pdfjsLib = await import('pdfjs-dist');
       
-      // Use the worker from node_modules instead of CDN
-      const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
+      // Configure worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
       
       setProgress(20);
       
