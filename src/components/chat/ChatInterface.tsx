@@ -204,36 +204,40 @@ const ChatInterface = () => {
                     ? 'bg-primary/10 border-primary/20' 
                     : 'bg-card'
                 }`}>
-                  {message.role === 'assistant' && message.isTyping ? (
-                    <TypewriterText 
-                      text={message.content}
-                      onComplete={() => {
-                        setMessages(prev => 
-                          prev.map(msg => 
-                            msg.id === message.id 
-                              ? { ...msg, isTyping: false }
-                              : msg
-                          )
-                        );
-                      }}
-                    />
-                  ) : (
-                    <p className="text-foreground whitespace-pre-wrap">{message.content}</p>
-                  )}
-                  
-                  {/* Copy Button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 h-auto"
-                    onClick={() => copyToClipboard(message.content, message.id)}
-                  >
-                    {copiedMessageId === message.id ? (
-                      <Check className="h-3 w-3 text-green-600" />
+                  <div>
+                    {message.role === 'assistant' && message.isTyping ? (
+                      <TypewriterText 
+                        text={message.content}
+                        onComplete={() => {
+                          setMessages(prev => 
+                            prev.map(msg => 
+                              msg.id === message.id 
+                                ? { ...msg, isTyping: false }
+                                : msg
+                            )
+                          );
+                        }}
+                      />
                     ) : (
-                      <Copy className="h-3 w-3 text-muted-foreground" />
+                      <p className="text-foreground whitespace-pre-wrap">{message.content}</p>
                     )}
-                  </Button>
+                    
+                    {/* Copy Button Below Text */}
+                    <div className="mt-2 pt-2 border-t border-border/30 flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-1"
+                        onClick={() => copyToClipboard(message.content, message.id)}
+                      >
+                        {copiedMessageId === message.id ? (
+                          <Check className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <Copy className="h-3 w-3 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 </Card>
               </div>
             </div>
