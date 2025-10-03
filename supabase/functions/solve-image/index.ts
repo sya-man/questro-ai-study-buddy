@@ -32,9 +32,9 @@ serve(async (req) => {
     
     If you cannot identify any solvable questions, return an empty array.`
 
-    // Call Gemini AI Vision (using gemini-1.5-flash which supports vision)
+    // Call Gemini AI Vision (using gemini-2.5-flash which supports vision)
     console.log('Calling Gemini API for image analysis')
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

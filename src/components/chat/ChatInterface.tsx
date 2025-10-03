@@ -144,9 +144,10 @@ const ChatInterface = () => {
       });
       setIsLoading(false);
     } catch (error: any) {
+      console.error('Chat error:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to send message. Please check your API key in settings.',
+        description: error.message || 'Failed to send message. Please check your API key and try again.',
         variant: 'destructive',
       });
       setIsLoading(false);

@@ -49,8 +49,8 @@ const PdfMcqGenerator = () => {
       const pdfData = new Uint8Array(await file.arrayBuffer());
       const pdfjsLib = await import('pdfjs-dist');
       
-      // Configure worker
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      // Configure worker using unpkg CDN
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
       
       setProgress(20);
       
