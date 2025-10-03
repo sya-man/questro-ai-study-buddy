@@ -26,9 +26,17 @@ serve(async (req) => {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `You are Questro, an AI learning assistant. You can help with questions in any language, explain concepts, and solve problems. Always be helpful and educational. User message: ${message}`
+            text: `You are Questro, an AI learning assistant. You help students with questions in any language, explain concepts, and solve problems. Be helpful, friendly, and educational. Feel free to use emojis 😊 to make conversations engaging and warm. Respond naturally to the user's message.
+
+User message: ${message}`
           }]
-        }]
+        }],
+        generationConfig: {
+          temperature: 0.9,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048
+        }
       })
     })
 
@@ -56,8 +64,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
+    console.error('Chat AI error:', error)
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
